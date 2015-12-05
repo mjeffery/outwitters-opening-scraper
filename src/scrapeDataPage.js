@@ -1,39 +1,17 @@
 var _ = require('lodash');
 var Promise = require('bluebird');
 var rp = require('request-promise');
-var cheerio = require('cheerio');
 var async = require('async');
 
-var tools = require('../lib/tools');
+var saveToDisk = require('../lib/save-to-disk');
 var promisifyQueue = require('../lib/promisify-queue');
 var unzipRequest = require('../lib/unzip-request');
 
 rp.get('http://osn.codepenguin.com/labs/data')
-	.then(function(html) {
-		return Promise.all([
-			scrapeReplayIndices(html),
-			scrapeLeagues(html)	
-		]);	
-	})
-
-function scrapeReplayIndices(html) {
-	return Promise.resolve(html)
-		.then(scrapeRows)
-		.then(convertRows)
-		.then(tools.saveToDisk('data/master_index.json'))
-		.then(processRows);
-}
-
-function scrapeLeagues(html) {
-	return Promise.resolve(html)
-		.then(function(html) {
-			var $ = cheerio.load(html);	
-
-			$('table').eq(0).find('tr').each(function(i, elem) {
-
-			});
-		})
-}
+	.then(scrapeRows)
+	.then(convertRows)
+	.then(saveToDisk('data/master_index.json'))
+	.then(processRows);
 
 function scrapeRows(html) {
 	var matcher = /var data =\s*([^;]*)/.exec(html) || [];
@@ -52,22 +30,10 @@ function convertRows(rawRows) {
 }
 
 function processRows(rows) {
-	return promisifyQueue(rows, processRow, 5);	
-}
-
-function processRow(row) {
-	return Promise.all([
-		getReplaysForRow(row),
-		getLeaderboardsForRow(row)
-	]);
+	return promisifyQueue(rows, getReplaysForRow, 5);	
 }
 
 function getReplaysForRow(row) {
 	return unzipRequest(row.replaysAt)
-		.then(tools.saveToDisk('data/replays_index.' + row.created + '.csv'));
-}
-
-function getLeaderboardsForRow(row) {
-	return unzipRequest(row.leaderboardAt)
-		.then(tools.saveToDisk('data/leaderboards.' + row.created + '.csv'))
+		.then(saveToDisk('data/replays_index.' + row.created + '.csv'));
 }
