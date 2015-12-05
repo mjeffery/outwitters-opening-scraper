@@ -1,16 +1,39 @@
 var _ = require('lodash');
 var Promise = require('bluebird');
 var rp = require('request-promise');
+var cheerio = require('cheerio');
 var async = require('async');
 
 var tools = require('../lib/tools');
+var promisifyQueue = require('../lib/promisify-queue');
 var unzipRequest = require('../lib/unzip-request');
 
 rp.get('http://osn.codepenguin.com/labs/data')
-	.then(scrapeRows)
-	.then(convertRows)
-	.then(tools.saveToDisk('data/master_index.json'))
-	.then(processRows);
+	.then(function(html) {
+		return Promise.all([
+			scrapeReplayIndices(html),
+			scrapeLeagues(html)	
+		]);	
+	})
+
+function scrapeReplayIndices(html) {
+	return Promise.resolve(html)
+		.then(scrapeRows)
+		.then(convertRows)
+		.then(tools.saveToDisk('data/master_index.json'))
+		.then(processRows);
+}
+
+function scrapeLeagues(html) {
+	return Promise.resolve(html)
+		.then(function(html) {
+			var $ = cheerio.load(html);	
+
+			$('table').eq(0).find('tr').each(function(i, elem) {
+
+			});
+		})
+}
 
 function scrapeRows(html) {
 	var matcher = /var data =\s*([^;]*)/.exec(html) || [];
@@ -29,22 +52,22 @@ function convertRows(rawRows) {
 }
 
 function processRows(rows) {
-	var queue = async.queue(processRow, 5);	
-	var pushJob = Promise.promisify(queue.push, { context: queue });
-
-	queue.pause();
-	var promise = Promise.all(
-		_.map(rows, function(row) {
-			return pushJob(row);
-		})
-	);
-	queue.resume();
-
-	return promise;
+	return promisifyQueue(rows, processRow, 5);	
 }
 
-function processRow(row, callback) {
+function processRow(row) {
+	return Promise.all([
+		getReplaysForRow(row),
+		getLeaderboardsForRow(row)
+	]);
+}
+
+function getReplaysForRow(row) {
 	return unzipRequest(row.replaysAt)
-		.then(tools.saveToDisk('data/replays.' + row.created + '.csv'))
-		.asCallback(callback);
+		.then(tools.saveToDisk('data/replays_index.' + row.created + '.csv'));
+}
+
+function getLeaderboardsForRow(row) {
+	return unzipRequest(row.leaderboardAt)
+		.then(tools.saveToDisk('data/leaderboards.' + row.created + '.csv'))
 }
