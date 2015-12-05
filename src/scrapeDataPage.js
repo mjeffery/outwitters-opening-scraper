@@ -4,6 +4,7 @@ var rp = require('request-promise');
 var async = require('async');
 
 var tools = require('../lib/tools');
+var unzipRequest = require('../lib/unzip-request');
 
 rp.get('http://osn.codepenguin.com/labs/data')
 	.then(scrapeRows)
@@ -34,7 +35,6 @@ function processRows(rows) {
 	queue.pause();
 	var promise = Promise.all(
 		_.map(rows, function(row) {
-			//console.log('adding ' + row.replaysAt);
 			return pushJob(row);
 		})
 	);
@@ -44,10 +44,7 @@ function processRows(rows) {
 }
 
 function processRow(row, callback) {
-	return rp(row.replaysAt)
-		.then(function(resp) {
-			console.log(resp);
-		})
+	return unzipRequest(row.replaysAt)
 		.then(tools.saveToDisk('data/replays.' + row.created + '.csv'))
+		.asCallback(callback);
 }
-
