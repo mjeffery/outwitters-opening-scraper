@@ -20,6 +20,9 @@ var select_raw_code = 'select raw_state_code_id from raw_state_codes where raw_s
 
 var insert_raw_code = 'insert into raw_state_codes (raw_state_code, state) values (?, ?)';
 
+//var insert_raw_code = 'insert into raw_state_codes (raw_state_code, state) values (?, ?) ' +
+//					  'on duplicate key update raw_state_code_id=LAST_INSERT_ID(raw_state_code_id)';
+
 var insert_turn = 'insert into turns (game_id, turn, start_raw_code_id, end_raw_code_id) ' +
 				  'values (?, ?, ?, ?)';
 
@@ -81,12 +84,19 @@ function worker(filename, next) {
 				.value();
 		})
 		.then(attachStateCodeIds)
-		.then(saveToDisk('data/turns/' + id + '.json'))
+		.each(insertTurn)
+		//.then(saveToDisk('data/turns/' + id + '.json'))
 		.asCallback(next);
 }
 
 function attachStateCodeIds(turns) {
-	return Promise.each(turns, findOrCreateRawStateCode)
+	return Promise.mapSeries(turns, findOrCreateRawStateCode)
+		.then(function(turns) {
+			for(var i=0; i<turns.length - 1; i++) {
+				turns[i].end_raw_state_id = turns[i+1].start_raw_state_id;	
+			}
+			return turns;
+		})
 }
 
 function findOrCreateRawStateCode(turn) {
@@ -103,8 +113,22 @@ function findOrCreateRawStateCode(turn) {
 			}
 		})
 		.then(function(id) {
-			return _.extend( { start_raw_state_id: id }, turn);
+			var ids = { 
+				start_raw_state_id: id,
+				end_raw_state_id: null
+			};
+			return _.extend(ids, turn);
 		})
+}
+
+function insertTurn(turn, index) {
+	var args = [
+		turn.game_id,
+		turn.turn,
+		turn.start_raw_state_id,
+		turn.end_raw_state_id
+	];
+	return query(insert_turn, args);
 }
 
 function deleteExistingTurns(id) {
