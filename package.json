@@ -7,5 +7,19 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "mjeffery",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "async": "^1.5.0",
+    "bluebird": "^3.0.6",
+    "concat-files": "^0.1.0",
+    "fast-csv": "^0.6.0",
+    "fs-extra": "^0.26.2",
+    "lodash": "^3.10.1",
+    "moment": "^2.10.6",
+    "mysql": "^2.9.0",
+    "rc": "^1.1.5",
+    "request": "^2.67.0",
+    "request-promise": "^1.0.2",
+    "zlib": "^1.0.5"
+  }
 }

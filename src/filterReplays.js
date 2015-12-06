@@ -46,8 +46,7 @@ function createMasterFile(files) {
 function readIntrestingRows(filename) {
 	var deferred = defer();
 
-	var fullpath = path.join('./data', filename);
-	var stream = fs.createReadStream(fullpath);
+	var stream = fs.createReadStream(filename);
 	var rows = [];
 
 	csv
