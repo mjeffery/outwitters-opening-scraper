@@ -48,6 +48,7 @@ create table turns (
 	turn_id int unsigned auto_increment,
     game_id int unsigned not null,
     turn int unsigned not null,
+    active_player int unsigned not null,
     start_raw_code_id int unsigned not null,
     end_raw_code_id int unsigned,
     start_code_id int unsigned,

@@ -23,8 +23,8 @@ var insert_raw_code = 'insert into raw_state_codes (raw_state_code, state) value
 //var insert_raw_code = 'insert into raw_state_codes (raw_state_code, state) values (?, ?) ' +
 //					  'on duplicate key update raw_state_code_id=LAST_INSERT_ID(raw_state_code_id)';
 
-var insert_turn = 'insert into turns (game_id, turn, start_raw_code_id, end_raw_code_id) ' +
-				  'values (?, ?, ?, ?)';
+var insert_turn = 'insert into turns (game_id, turn, active_player, start_raw_code_id, end_raw_code_id) ' +
+				  'values (?, ?, ?, ?, ?)';
 
 
 var pool = makePool();
@@ -125,6 +125,7 @@ function insertTurn(turn, index) {
 	var args = [
 		turn.game_id,
 		turn.turn,
+		turn.state.active,
 		turn.start_raw_state_id,
 		turn.end_raw_state_id
 	];
